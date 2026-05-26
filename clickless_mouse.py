@@ -9,6 +9,8 @@ from talon import Module, Context, app, canvas, screen, ui, ctrl, cron, actions,
 
 import math, time
 
+from .dwell_detection import is_dwelling, is_no_longer_idle
+
 # l = left click
 # lh = left hold
 # lr = left release. when left is down, all options become lr
@@ -429,14 +431,14 @@ class clickless_mouse:
                 self.suppress_next_update = False
                 self.x, self.y = ctrl.mouse_pos()
                 return
-            elif math.fabs(self.x - x) > 1 or math.fabs(self.y - y) > 1:
+            elif is_no_longer_idle(self.x, self.y, x, y):
                 self.x, self.y = ctrl.mouse_pos()
                 self.state = STATE_MOUSE_MOVING
 
         elif self.state == STATE_MOUSE_MOVING:
             # print("moving")
 
-            if x == self.x and y == self.y:
+            if is_dwelling(self.x, self.y, x, y):
                 self.x, self.y = ctrl.mouse_pos()
                 self.last_time = now
                 self.state = STATE_MOUSE_STOPPED
@@ -446,7 +448,7 @@ class clickless_mouse:
         elif self.state == STATE_MOUSE_STOPPED:
             # print("stopped")
 
-            if x == self.x and y == self.y:
+            if is_dwelling(self.x, self.y, x, y):
                 if now - self.last_time >= settings.get("user.clickless_mouse_idle_time_before_display"):
                     self.last_time = now
                     self._dwell_x, self._dwell_y = ctrl.mouse_pos()
